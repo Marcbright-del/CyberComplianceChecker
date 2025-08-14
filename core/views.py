@@ -30,7 +30,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from .models import Scan, Organization
 from .serializers import OrganizationSerializer, ScanSerializer, UserSerializer
 from .permissions import IsAdminUser
-from .tasks import run_scan_task
+
 from .scanner import CloudScanner # Make sure CloudScanner is imported
 
 
@@ -126,17 +126,17 @@ class CreateScanView(APIView):
         org_id = request.data.get('organization_id')
         if not org_id:
             return Response({"error": "Organization ID is required"}, status=status.HTTP_400_BAD_REQUEST)
-        
-        
+
         try:
             organization = Organization.objects.get(id=org_id)
         except Organization.DoesNotExist:
             return Response({"error": "Organization not found"}, status=status.HTTP_404_NOT_FOUND)
-        
-        # --- This is the change: Run the scan directly ---
+
+        # This is the change: We run the scan directly here
         print(f"Starting synchronous scan for {organization.name}")
         scanner = CloudScanner()
-        target_ip = f"192.168.1.{organization.id}"
+        # In a real app, the Organization model would have an IP/domain field
+        target_ip = f"192.168.1.{organization.id}" 
         scan_result = scanner.run_scan(target_ip=target_ip)
 
         scan = Scan.objects.create(
@@ -146,12 +146,11 @@ class CreateScanView(APIView):
         )
 
         print(f"Finished scan for {organization.name}")
-        # --- End of change ---
 
-
+        # Return the final score directly to the frontend
         return Response(
-            {"message": "Scan has been initiated in the background."},
-            status=status.HTTP_202_ACCEPTED
+            {"message": "Scan completed successfully", "scan_id": scan.id, "score": scan.compliance_score},
+            status=status.HTTP_201_CREATED
         )
 
 # --- User and Profile Management Views ---
