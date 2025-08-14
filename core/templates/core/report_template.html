@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Compliance Report</title>
+    <style>
+        body { font-family: sans-serif; color: #333; }
+        .header { text-align: center; border-bottom: 2px solid #06b6d4; padding-bottom: 10px; }
+        .header h1 { color: #0891b2; margin: 0; }
+        .header p { margin: 5px 0; color: #555; }
+        .content { margin-top: 30px; }
+        .section { border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-bottom: 20px; }
+        .section h2 { margin-top: 0; color: #0891b2; border-bottom: 1px solid #eee; padding-bottom: 5px;}
+        .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .details-grid p { margin: 5px 0; }
+        .score-box { text-align: center; background-color: #f0f9ff; padding: 20px; border-radius: 8px; }
+        .score { font-size: 48px; font-weight: bold; }
+        .risk-High { color: #ef4444; }
+        .risk-Medium { color: #f59e0b; }
+        .risk-Low { color: #22c55e; }
+        .footer { text-align: center; margin-top: 40px; font-size: 12px; color: #aaa; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>ANTIC Cyber Compliance Checker (AC³)</h1>
+        <p>Official Compliance Report</p>
+    </div>
+
+    <div class="content">
+        <div class="section">
+            <h2>Organization Details</h2>
+            <div class="details-grid">
+                <p><strong>Name:</strong> {{ organization.name }}</p>
+                <p><strong>Industry:</strong> {{ organization.industry }}</p>
+                <p><strong>Registration No:</strong> {{ organization.registration_no }}</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Scan Results</h2>
+            <div class="details-grid">
+                <p><strong>Scan ID:</strong> {{ scan.id }}</p>
+                <p><strong>Date Conducted:</strong> {{ scan.scan_date|date:"F j, Y, P" }}</p>
+            </div>
+            <div class="score-box">
+                <p>Compliance Score</p>
+                <div class="score risk-{{ scan.risk_level }}">{{ scan.compliance_score }}%</div>
+                <p class="risk-{{ scan.risk_level }}"><strong>Risk Level:</strong> {{ scan.risk_level }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Report generated on {% now "F j, Y, P" %}</p>
+        <p>This is a system-generated report and is digitally signed for integrity.</p>
+    </div>
+</body>
+</html>
