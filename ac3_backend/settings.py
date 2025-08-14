@@ -122,10 +122,5 @@ CORS_ALLOWED_ORIGINS = [
 ]
 # We will add our live frontend URL to this list later
 
-CELERY_BROKER_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
-CELERY_RESULT_BACKEND = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
 
 SCANNER_API_KEY = os.environ.get('SCANNER_API_KEY', 'YOUR_API_KEY_GOES_HERE')
