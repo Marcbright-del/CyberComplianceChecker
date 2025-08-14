@@ -1,0 +1,19 @@
+# Environments
+venv/
+.env
+
+# Django
+*.log
+*.pyc
+__pycache__/
+db.sqlite3
+
+# Keys
+*.pem
+*.key
+*.crt
+*.pfx
+
+# OS files
+.DS_Store
+Thumbs.db
