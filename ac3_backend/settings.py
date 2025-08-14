@@ -18,20 +18,7 @@ SECRET_KEY = os.environ.get(
 # We set DEBUG to False on Heroku, and True locally.
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = [
-     # This gets the live URL from Render's environment
-    os.environ.get('RENDER_EXTERNAL_HOSTNAME', None),
-    # Add these for local development
-    'localhost',
-    '127.0.0.1',
-]
-ALLOWED_HOSTS = [host for host in ALLOWED_HOSTS if host]
-# We will add our Heroku app URL here later.
-# For now, we get it from an environment variable if it exists.
-RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
-if RENDER_EXTERNAL_HOSTNAME:
-    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
-
+ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
 # Application definition
 INSTALLED_APPS = [
     
