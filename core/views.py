@@ -31,6 +31,8 @@ from .models import Scan, Organization
 from .serializers import OrganizationSerializer, ScanSerializer, UserSerializer
 from .permissions import IsAdminUser
 from .tasks import run_scan_task
+from .scanner import CloudScanner # Make sure CloudScanner is imported
+
 
 User = get_user_model()
 signer = TimestampSigner()
@@ -125,7 +127,27 @@ class CreateScanView(APIView):
         if not org_id:
             return Response({"error": "Organization ID is required"}, status=status.HTTP_400_BAD_REQUEST)
         
-        run_scan_task.delay(org_id, request.user.id)
+        
+        try:
+            organization = Organization.objects.get(id=org_id)
+        except Organization.DoesNotExist:
+            return Response({"error": "Organization not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        # --- This is the change: Run the scan directly ---
+        print(f"Starting synchronous scan for {organization.name}")
+        scanner = CloudScanner()
+        target_ip = f"192.168.1.{organization.id}"
+        scan_result = scanner.run_scan(target_ip=target_ip)
+
+        scan = Scan.objects.create(
+            organization=organization,
+            compliance_score=scan_result["score"],
+            risk_level=scan_result["risk"]
+        )
+
+        print(f"Finished scan for {organization.name}")
+        # --- End of change ---
+
 
         return Response(
             {"message": "Scan has been initiated in the background."},

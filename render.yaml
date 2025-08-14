@@ -1,3 +1,7 @@
+databases:
+  - name: antic-database
+    plan: free
+
 services:
   - type: web
     name: ac3-backend
@@ -8,17 +12,5 @@ services:
     envVars:
       - key: DATABASE_URL
         fromDatabase:
-          name: antic-database # <-- Replace this
-          property: connectionString
-
-  - type: worker
-    name: ac3-worker
-    env: python
-    plan: free
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "celery -A ac3_backend worker -l info -P gevent"
-    envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: antic-database # <-- And replace this
+          name: antic-database
           property: connectionString
