@@ -125,6 +125,8 @@ REST_FRAMEWORK = {
 
 # This will read the comma-separated list from your Render environment variable
 CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:5173').split(',')
+
+CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', 'http://localhost:5173').split(',')
 # We will add our live frontend URL to this list later
 
 
