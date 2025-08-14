@@ -18,7 +18,14 @@ SECRET_KEY = os.environ.get(
 # We set DEBUG to False on Heroku, and True locally.
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+     # This gets the live URL from Render's environment
+    os.environ.get('RENDER_EXTERNAL_HOSTNAME', None),
+    # Add these for local development
+    'localhost',
+    '127.0.0.1',
+]
+ALLOWED_HOSTS = [host for host in ALLOWED_HOSTS if host]
 # We will add our Heroku app URL here later.
 # For now, we get it from an environment variable if it exists.
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
@@ -116,10 +123,8 @@ REST_FRAMEWORK = {
     )
 }
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://localhost:3000",
-]
+# This will read the comma-separated list from your Render environment variable
+CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:5173').split(',')
 # We will add our live frontend URL to this list later
 
 
