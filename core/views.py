@@ -46,19 +46,22 @@ def get_tokens_for_user(user):
 
 class LoginStep1View(APIView):
     def post(self, request, *args, **kwargs):
-        username = request.data.get('username')
-        password = request.data.get('password')
-        user = authenticate(username=username, password=password)
+        try:
+            username = request.data.get('username')
+            password = request.data.get('password')
+            user = authenticate(username=username, password=password)
 
-        if user is None:
-            return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
+            if user is None:
+                return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
 
-        if hasattr(user, 'profile') and user.profile.mfa_enabled:
-            temp_token = signer.sign(str(user.id))
-            return Response({"mfa_required": True, "temp_token": temp_token})
-        else:
-            tokens = get_tokens_for_user(user)
-            return Response(tokens)
+            if hasattr(user, 'profile') and user.profile.mfa_enabled:
+                temp_token = signer.sign(str(user.id))
+                return Response({"mfa_required": True, "temp_token": temp_token})
+            else:
+                tokens = get_tokens_for_user(user)
+                return Response(tokens)
+        except Exception as e:
+            return Response({"error": f"Internal server error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class LoginStep2View(APIView):
     def post(self, request, *args, **kwargs):
