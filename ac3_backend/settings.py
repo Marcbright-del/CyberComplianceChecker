@@ -1,28 +1,24 @@
 import os
 import dj_database_url
 from pathlib import Path
-from dotenv import load_dotenv # <-- Add this import
+from dotenv import load_dotenv
 load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
-# Heroku will provide this value. We use a default for local development.
-SECRET_KEY = os.environ.get(
-    'SECRET_KEY', 
-    'django-insecure-YOUR-DEFAULT-KEY-HERE' # Replace with your original key
-)
+SECRET_KEY = os.environ.get('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-# We set DEBUG to False on Heroku, and True locally.
-DEBUG = os.environ.get('DEBUG', 'True') == 'True'
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
+# Correctly reads the allowed hosts from the Render environment variable
 ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
-# Application definition
+
+
+# Application definition - Corrected and cleaned up
 INSTALLED_APPS = [
-    
-    
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -30,7 +26,7 @@ INSTALLED_APPS = [
     'django_otp',
     'django_otp.plugins.otp_totp',
     'django.contrib.messages',
-    'whitenoise.runserver_nostatic', # For static files
+    'whitenoise.runserver_nostatic',
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework_simplejwt',
@@ -40,7 +36,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware', # For static files
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -70,26 +66,33 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'ac3_backend.wsgi.application'
-ASGI_APPLICATION = 'ac3_backend.asgi.application'
+# We are not using ASGI, so this line can be removed if it exists
+# ASGI_APPLICATION = 'ac3_backend.asgi.application' 
 
-# Database Configuration for Heroku
+# Database Configuration for Production and Local Fallback
 DATABASES = {
     'default': dj_database_url.config(
-        # Fallback to SQLite for local development
         default=f'sqlite:///{BASE_DIR / "db.sqlite3"}',
         conn_max_age=600
     )
 }
 
-# ... (Your AUTH_PASSWORD_VALIDATORS, etc. can remain the same) ...
+AUTH_PASSWORD_VALIDATORS = [
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
+]
 
-# Internationalization, Language, Timezone settings...
+# Internationalization
+LANGUAGE_CODE = 'en-us'
+TIME_ZONE = 'UTC'
+USE_I18N = True
+USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = 'static/'
-# This is where Django will collect all static files for production
-STATIC_ROOT = BASE_DIR / 'staticfiles' 
-# Tell WhiteNoise where to find files and to use compression
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 STORAGES = {
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
@@ -98,7 +101,7 @@ STORAGES = {
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# --- Keep all your other custom settings below ---
+# --- Custom Settings ---
 AUTHENTICATION_BACKENDS = [
     'core.authentication.CertificateAuthenticationBackend',
     'django.contrib.auth.backends.ModelBackend',
@@ -110,11 +113,8 @@ REST_FRAMEWORK = {
     )
 }
 
-# This will read the comma-separated list from your Render environment variable
+# Reads the comma-separated list from your Render environment variables
 CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:5173').split(',')
-
 CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', 'http://localhost:5173').split(',')
-# We will add our live frontend URL to this list later
 
-
-SCANNER_API_KEY = os.environ.get('SCANNER_API_KEY', 'YOUR_API_KEY_GOES_HERE')
+SCANNER_API_KEY = os.environ.get('SCANNER_API_KEY')
