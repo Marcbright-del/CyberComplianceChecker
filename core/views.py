@@ -113,6 +113,8 @@ class OrganizationDetailView(generics.RetrieveAPIView):
     serializer_class = OrganizationSerializer
     lookup_field = 'pk'
 
+
+
 class CreateScanView(APIView):
     permission_classes = [IsAdminUser]
 
@@ -127,8 +129,20 @@ class CreateScanView(APIView):
             return Response({"error": "Organization not found"}, status=status.HTTP_404_NOT_FOUND)
 
         print(f"Starting synchronous scan for {organization.name}")
-        
-        # Create the parent Scan object
+
+        # --- This is the corrected logic ---
+        # To test different outcomes, let's randomly pretend the scan finds a high risk
+        is_risky_scan = random.choice([True, False])
+        if is_risky_scan:
+            real_scan_result = {"score": 25, "risk": "High"}
+            print("--- SIMULATING a High Risk scan result ---")
+        else:
+            scanner = CloudScanner()
+            target_ip = "8.8.8.8"
+            real_scan_result = scanner.run_scan(target_ip=target_ip)
+            print("--- Running a REAL scan on a low-risk IP ---")
+        # --- End of corrected logic ---
+
         scan = Scan.objects.create(organization=organization, risk_level="Pending")
 
         all_checklist_items = ChecklistItem.objects.all()
@@ -137,37 +151,24 @@ class CreateScanView(APIView):
 
         if all_checklist_items.exists():
             for item in all_checklist_items:
-                # This is the corrected logic: Use random.choice
-                status = random.choice(['pass', 'fail'])
-                
-                ScanResult.objects.create(
-                    scan=scan,
-                    checklist_item=item,
-                    status=status,
-                    notes=f"Automated check for '{item.name}' resulted in a '{status}'."
-                )
+                status = 'pass'
+                if real_scan_result.get("risk") == 'High' and item.category.name == 'Network Security':
+                    status = 'fail'
+                ScanResult.objects.create(scan=scan, checklist_item=item, status=status, notes="...")
                 
                 total_possible_score += item.weight
                 if status == 'pass':
                     achieved_score += item.weight
             
-            # Calculate the final weighted score
             if total_possible_score > 0:
                 final_score = round((achieved_score / total_possible_score) * 100, 2)
             else:
                 final_score = 100.0
         else:
-            final_score = 100.0 # Default score if no checklist exists
-
-        # Determine risk level based on score
-        risk_level = "Low"
-        if final_score < 60:
-            risk_level = "High"
-        elif final_score < 80:
-            risk_level = "Medium"
+            final_score = real_scan_result.get("score", 0)
 
         scan.compliance_score = final_score
-        scan.risk_level = risk_level
+        scan.risk_level = real_scan_result.get("risk", "Low")
         scan.save()
         
         print(f"Finished scan for {organization.name}")
@@ -176,7 +177,6 @@ class CreateScanView(APIView):
             {"message": "Scan completed successfully", "scan_id": scan.id, "score": scan.compliance_score},
             status=status.HTTP_201_CREATED
         )
-
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all().order_by('-date_joined')
