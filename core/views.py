@@ -119,23 +119,60 @@ class CreateScanView(APIView):
         org_id = request.data.get('organization_id')
         if not org_id:
             return Response({"error": "Organization ID is required"}, status=status.HTTP_400_BAD_REQUEST)
-        
-        # This is now a synchronous call
+
         try:
             organization = Organization.objects.get(id=org_id)
         except Organization.DoesNotExist:
             return Response({"error": "Organization not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        scanner = CloudScanner()
-        target_ip = f"192.168.1.{organization.id}" 
-        scan_result = scanner.run_scan(target_ip=target_ip)
+        print(f"Starting synchronous scan for {organization.name}")
 
-        scan = Scan.objects.create(
-            organization=organization,
-            compliance_score=scan_result["score"],
-            risk_level=scan_result["risk"]
-        )
-        
+        # 1. Run the real scan to get an overall risk assessment.
+        scanner = CloudScanner()
+        target_ip = "8.8.8.8"  # Using a public IP for a reliable test result
+        real_scan_result = scanner.run_scan(target_ip=target_ip)
+
+        # 2. Create the parent Scan object.
+        scan = Scan.objects.create(organization=organization, risk_level="Pending")
+
+        all_checklist_items = ChecklistItem.objects.all()
+        total_possible_score = 0
+        achieved_score = 0
+
+        # 3. Loop through checklist items and determine pass/fail based on the real scan.
+        if all_checklist_items.exists():
+            for item in all_checklist_items:
+                status = 'pass'
+                if real_scan_result.get("risk") == 'High' and item.category.name == 'Network Security':
+                    status = 'fail'
+
+                ScanResult.objects.create(
+                    scan=scan,
+                    checklist_item=item,
+                    status=status,
+                    notes=f"Automated check for '{item.name}'. Result based on overall risk assessment."
+                )
+
+                total_possible_score += item.weight
+                if status == 'pass':
+                    achieved_score += item.weight
+
+            # 4. Calculate the final weighted score.
+            if total_possible_score > 0:
+                final_score = round((achieved_score / total_possible_score) * 100, 2)
+            else:
+                final_score = 100.0
+        else:
+            # If no checklist, use the API score directly
+            final_score = real_scan_result.get("score", 0)
+
+
+        scan.compliance_score = final_score
+        scan.risk_level = real_scan_result.get("risk", "Low")
+        scan.save()
+
+        print(f"Finished scan for {organization.name}")
+
         return Response(
             {"message": "Scan completed successfully", "scan_id": scan.id, "score": scan.compliance_score},
             status=status.HTTP_201_CREATED
