@@ -216,32 +216,36 @@ class GenerateReportPDFView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, scan_uuid, *args, **kwargs):
+        import traceback
         try:
             scan = Scan.objects.get(uuid=scan_uuid)
             organization = scan.organization
+            context = {'scan': scan, 'organization': organization}
+            html_string = render_to_string('core/report_template.html', context)
+            pdf_file = HTML(string=html_string).write_pdf()
+            pdf_hash = hashlib.sha256(pdf_file).digest()
+            key_path = os.path.join(settings.BASE_DIR, 'private_key.pem')
+            with open(key_path, "rb") as key_file:
+                private_key = serialization.load_pem_private_key(
+                    key_file.read(),
+                    password=None,
+                )
+            signature = private_key.sign(
+                pdf_hash,
+                padding.PKCS1v15(),
+                hashes.SHA256()
+            )
+            scan.digital_signature = base64.b64encode(signature).decode('utf-8')
+            scan.save()
+            response = HttpResponse(pdf_file, content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="compliance_report_{organization.name}_{scan.id}.pdf"'
+            return response
         except Scan.DoesNotExist:
             return Response({"error": "Scan not found"}, status=status.HTTP_404_NOT_FOUND)
-
-        context = {'scan': scan, 'organization': organization}
-        html_string = render_to_string('core/report_template.html', context)
-        pdf_file = HTML(string=html_string).write_pdf()
-        pdf_hash = hashlib.sha256(pdf_file).digest()
-        key_path = os.path.join(settings.BASE_DIR, 'private_key.pem')
-        with open(key_path, "rb") as key_file:
-            private_key = serialization.load_pem_private_key(
-                key_file.read(),
-                password=None,
-            )
-        signature = private_key.sign(
-            pdf_hash,
-            padding.PKCS1v15(),
-            hashes.SHA256()
-        )
-        scan.digital_signature = base64.b64encode(signature).decode('utf-8')
-        scan.save()
-        response = HttpResponse(pdf_file, content_type='application/pdf')
-        response['Content-Disposition'] = f'attachment; filename="compliance_report_{organization.name}_{scan.id}.pdf"'
-        return response
+        except Exception as e:
+            print(f"Error generating report PDF: {e}")
+            traceback.print_exc()
+            return Response({"error": f"Internal server error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class VerifyReportView(APIView):
     permission_classes = [IsAuthenticated]

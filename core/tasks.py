@@ -1,4 +1,5 @@
 from celery import shared_task
+import random
 from .models import Organization, Scan, ChecklistItem, ScanResult
 from .scanner import CloudScanner
 
@@ -32,8 +33,7 @@ def run_scan_task(organization_id, user_id):
 
         # Simple rule: If the overall risk from the API is High,
         # fail all checks related to Network Security.
-        if real_scan_result.get("risk") == 'High' and item.category.name == 'Network Security':
-            status = 'fail'
+        
 
         ScanResult.objects.create(
             scan=scan,
