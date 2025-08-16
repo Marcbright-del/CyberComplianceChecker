@@ -69,7 +69,7 @@ class OrganizationSerializer(serializers.ModelSerializer):
 
     def get_latest_scan_score(self, obj):
         latest_scan = obj.scan_set.order_by('-scan_date').first()
-        return latest_scan.compliance_score if latest_scan else None
+        return latest_scan.compliance_score if latest_scan else "N/A"
 
     def get_latest_scan_risk(self, obj):
         latest_scan = obj.scan_set.order_by('-scan_date').first()
